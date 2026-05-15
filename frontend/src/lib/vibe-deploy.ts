@@ -308,7 +308,7 @@ export async function verifyEditToken(kv: KVNamespace, slug: string, token: stri
 }
 
 export function makeSiteUrls(requestUrl: string, slug: string, token?: string) {
-	const publicUrl = new URL(`/${slug}`, requestUrl);
+	const publicUrl = new URL(`/${slug}/`, requestUrl);
 	const editUrl = new URL(`/${slug}/edit`, requestUrl);
 
 	if (token) {

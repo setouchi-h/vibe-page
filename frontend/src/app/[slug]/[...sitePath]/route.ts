@@ -1,4 +1,12 @@
-import { contentTypeForPath, getVibeBindings, isValidSlug, normalizeSitePath, readSiteMeta, siteFileKey } from "@/lib/vibe-deploy";
+import { NextResponse } from "next/server";
+import {
+	contentTypeForPath,
+	getVibeBindings,
+	isValidSlug,
+	normalizeSitePath,
+	readSiteMeta,
+	siteFileKey,
+} from "@/lib/vibe-deploy";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -24,7 +32,12 @@ export async function GET(request: Request, context: RouteContext) {
 		return notFound();
 	}
 
-	const resolvedPath = resolvePublicPath(sitePath, request.url);
+	const resolvedPath = resolvePublicPath(sitePath);
+
+	if (shouldRedirectToDirectoryUrl(resolvedPath, request.url)) {
+		return redirectToTrailingSlash(new URL(request.url), ["slug", "sitePath"]);
+	}
+
 	const object = await bucket.get(siteFileKey(slug, resolvedPath));
 
 	if (!object) {
@@ -35,22 +48,35 @@ export async function GET(request: Request, context: RouteContext) {
 		"Content-Type": contentTypeForPath(resolvedPath),
 		"Cache-Control": "no-store",
 	});
-	object.writeHttpMetadata(headers);
 
 	return new Response(object.body, {
 		headers,
 	});
 }
 
-function resolvePublicPath(pathParts: string[], requestUrl: string) {
-	const requestPath = new URL(requestUrl).pathname;
+function resolvePublicPath(pathParts: string[]) {
 	const normalizedPath = normalizeSitePath(pathParts.join("/"));
 
-	if (requestPath.endsWith("/") || !hasFileExtension(normalizedPath)) {
+	if (!hasFileExtension(normalizedPath)) {
 		return `${normalizedPath}/index.html`;
 	}
 
 	return normalizedPath;
+}
+
+function shouldRedirectToDirectoryUrl(resolvedPath: string, requestUrl: string) {
+	const requestPath = new URL(requestUrl).pathname;
+	return resolvedPath.endsWith("/index.html") && !requestPath.endsWith("/");
+}
+
+function redirectToTrailingSlash(url: URL, routeParamNames: string[]) {
+	url.pathname = `${url.pathname}/`;
+
+	for (const paramName of routeParamNames) {
+		url.searchParams.delete(paramName);
+	}
+
+	return NextResponse.redirect(url, 308);
 }
 
 function hasFileExtension(path: string) {

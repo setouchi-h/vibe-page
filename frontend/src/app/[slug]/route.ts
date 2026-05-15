@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import {
 	contentTypeForPath,
 	getVibeBindings,
@@ -15,7 +16,7 @@ type RouteContext = {
 	}>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
 	const { slug } = await context.params;
 
 	if (!isValidSlug(slug)) {
@@ -29,6 +30,12 @@ export async function GET(_request: Request, context: RouteContext) {
 		return notFound();
 	}
 
+	const requestUrl = new URL(request.url);
+
+	if (!requestUrl.pathname.endsWith("/")) {
+		return redirectToTrailingSlash(requestUrl, ["slug"]);
+	}
+
 	const object = await bucket.get(siteFileKey(slug, "index.html"));
 
 	if (!object) {
@@ -39,11 +46,20 @@ export async function GET(_request: Request, context: RouteContext) {
 		"Content-Type": contentTypeForPath("index.html"),
 		"Cache-Control": "no-store",
 	});
-	object.writeHttpMetadata(headers);
 
 	return new Response(object.body, {
 		headers,
 	});
+}
+
+function redirectToTrailingSlash(url: URL, routeParamNames: string[]) {
+	url.pathname = `${url.pathname}/`;
+
+	for (const paramName of routeParamNames) {
+		url.searchParams.delete(paramName);
+	}
+
+	return NextResponse.redirect(url, 308);
 }
 
 function notFound() {

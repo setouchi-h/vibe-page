@@ -27,7 +27,7 @@ export default async function EditPage({ params, searchParams }: PageProps) {
 	const { fileCount, html, totalBytes, updatedAt } = result;
 	const { editPath } = makeSiteUrls("http://local", slug, key);
 	const actionPath = editPath.replace("/edit", "/edit/actions");
-	const publicPath = `/${slug}`;
+	const publicPath = `/${slug}/`;
 	const isSingleFileSite = fileCount === 1;
 
 	return (
