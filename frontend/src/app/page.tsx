@@ -1,52 +1,57 @@
-import Image from "next/image";
+import { HTML_MAX_BYTES } from "@/lib/vibe-deploy";
 
-export default function Home() {
+type PageProps = {
+	searchParams: Promise<{
+		error?: string;
+	}>;
+};
+
+export default async function Home({ searchParams }: PageProps) {
+	const { error } = await searchParams;
+
 	return (
-		<div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-			<main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-				<Image className="dark:invert" src="/next.svg" alt="Next.js logo" width={180} height={38} priority />
-				<ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-					<li className="mb-2 tracking-[-.01em]">
-						Get started by editing{" "}
-						<code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-							src/app/page.tsx
-						</code>
-						.
-					</li>
-					<li className="tracking-[-.01em]">Save and see your changes instantly.</li>
-				</ol>
+		<main className="mx-auto grid min-h-screen w-full max-w-[920px] content-start gap-6 px-4 py-12 sm:px-6 sm:py-16">
+			<section className="grid gap-2" aria-labelledby="deploy-title">
+				<p className="text-xs font-bold uppercase tracking-wider text-teal-700">Vibe Deploy</p>
+				<h1 id="deploy-title" className="text-4xl font-bold leading-tight text-slate-950 sm:text-6xl">
+					AIで作ったHTMLを貼る
+				</h1>
+			</section>
 
-				<div className="flex gap-4 items-center flex-col sm:flex-row">
-					<a
-						className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-						href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						Read our docs
-					</a>
+			<form
+				className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/60 sm:p-6"
+				action="/api/sites"
+				method="post"
+			>
+				{error ? (
+					<p className="rounded-md border-l-4 border-red-700 bg-red-50 px-4 py-3 text-sm font-medium text-red-900">
+						{error}
+					</p>
+				) : null}
+				<div className="grid gap-2">
+					<label className="text-sm font-bold text-slate-900" htmlFor="html">
+						index.html
+					</label>
+					<textarea
+						className="min-h-[360px] w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-sm leading-relaxed text-slate-950 outline-none focus:border-teal-700 focus:ring-4 focus:ring-teal-700/15 sm:min-h-[480px]"
+						id="html"
+						name="html"
+						required
+						maxLength={HTML_MAX_BYTES}
+						spellCheck={false}
+						placeholder="<!doctype html>"
+					/>
 				</div>
-			</main>
-			<footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-				<a
-					className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-					href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Image aria-hidden src="/file.svg" alt="File icon" width={16} height={16} />
-					Learn
-				</a>
-				<a
-					className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-					href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					<Image aria-hidden src="/globe.svg" alt="Globe icon" width={16} height={16} />
-					Go to nextjs.org →
-				</a>
-			</footer>
-		</div>
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<p className="text-sm text-slate-500">最大500KB</p>
+					<button
+						className="inline-flex min-h-11 items-center justify-center rounded-md bg-teal-700 px-5 py-3 text-sm font-bold text-white hover:bg-teal-800"
+						type="submit"
+					>
+						公開する
+					</button>
+				</div>
+			</form>
+		</main>
 	);
 }
