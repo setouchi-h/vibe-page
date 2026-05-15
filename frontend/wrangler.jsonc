@@ -11,6 +11,12 @@
 		"nodejs_compat",
 		"global_fetch_strictly_public"
 	],
+	"routes": [
+		{
+			"pattern": "slap.page",
+			"custom_domain": true
+		}
+	],
 	"assets": {
 		"binding": "ASSETS",
 		"directory": ".open-next/assets"
