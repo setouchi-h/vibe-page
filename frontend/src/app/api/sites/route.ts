@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { VibeDeployError, createSite, getHtmlField, getVibeBindings } from "@/lib/vibe-deploy";
+import {
+	VibeDeployError,
+	createSite,
+	createSiteFromFiles,
+	getHtmlField,
+	getSiteFilesField,
+	getVibeBindings,
+} from "@/lib/vibe-deploy";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -7,9 +14,12 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
 	try {
 		const formData = await request.formData();
-		const html = getHtmlField(formData);
 		const { kv, bucket } = await getVibeBindings();
-		const { meta, token } = await createSite(kv, bucket, html);
+		const uploadType = formData.get("uploadType");
+		const { meta, token } =
+			uploadType === "files"
+				? await createSiteFromFiles(kv, bucket, await getSiteFilesField(formData))
+				: await createSite(kv, bucket, getHtmlField(formData));
 		const createdUrl = new URL(`/${meta.slug}/created`, request.url);
 		createdUrl.searchParams.set("key", token);
 

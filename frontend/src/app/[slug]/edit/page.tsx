@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { VibeDeployError, getVibeBindings, makeSiteUrls, siteHtmlKey, verifyEditToken } from "@/lib/vibe-deploy";
+import { SiteFilesForm } from "../../site-files-form";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -23,10 +24,11 @@ export default async function EditPage({ params, searchParams }: PageProps) {
 		return <ErrorMessage message={result.message} />;
 	}
 
-	const { html, updatedAt } = result;
+	const { fileCount, html, totalBytes, updatedAt } = result;
 	const { editPath } = makeSiteUrls("http://local", slug, key);
 	const actionPath = editPath.replace("/edit", "/edit/actions");
 	const publicPath = `/${slug}`;
+	const isSingleFileSite = fileCount === 1;
 
 	return (
 		<main className="mx-auto grid min-h-screen w-full max-w-[920px] content-start gap-6 px-4 py-10 sm:px-6 sm:py-16">
@@ -49,31 +51,43 @@ export default async function EditPage({ params, searchParams }: PageProps) {
 						{error}
 					</p>
 				) : null}
-				<form className="grid gap-4" method="post" action={actionPath}>
-					<input type="hidden" name="intent" value="update" />
-					<div className="grid gap-2">
-						<label className="text-sm font-bold text-slate-900" htmlFor="html">
-							index.html
-						</label>
-						<textarea
-							className="min-h-[360px] w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-sm leading-relaxed text-slate-950 outline-none focus:border-teal-700 focus:ring-4 focus:ring-teal-700/15 sm:min-h-[480px]"
-							id="html"
-							name="html"
-							required
-							spellCheck={false}
-							defaultValue={html}
-						/>
-					</div>
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-						<p className="text-sm text-slate-500">Updated: {updatedAt}</p>
-						<button
-							className="inline-flex min-h-11 items-center justify-center rounded-md bg-teal-700 px-5 py-3 text-sm font-bold text-white hover:bg-teal-800"
-							type="submit"
-						>
-							上書き保存
-						</button>
-					</div>
-				</form>
+				<div className="grid gap-1 text-sm text-slate-500 sm:grid-cols-3">
+					<p>Files: {fileCount}</p>
+					<p>Total: {formatBytes(totalBytes)}</p>
+					<p>Updated: {updatedAt}</p>
+				</div>
+				{isSingleFileSite ? (
+					<form className="grid gap-4" method="post" action={actionPath}>
+						<input type="hidden" name="intent" value="update" />
+						<input type="hidden" name="uploadType" value="html" />
+						<div className="grid gap-2">
+							<label className="text-sm font-bold text-slate-900" htmlFor="html">
+								index.html
+							</label>
+							<textarea
+								className="min-h-[360px] w-full resize-y rounded-md border border-slate-300 bg-slate-50 p-3 font-mono text-sm leading-relaxed text-slate-950 outline-none focus:border-teal-700 focus:ring-4 focus:ring-teal-700/15 sm:min-h-[480px]"
+								id="html"
+								name="html"
+								required
+								spellCheck={false}
+								defaultValue={html}
+							/>
+						</div>
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<p className="text-sm text-slate-500">最大500KB</p>
+							<button
+								className="inline-flex min-h-11 items-center justify-center rounded-md bg-teal-700 px-5 py-3 text-sm font-bold text-white hover:bg-teal-800"
+								type="submit"
+							>
+								上書き保存
+							</button>
+						</div>
+					</form>
+				) : null}
+				<div className="grid gap-3 border-t border-slate-200 pt-5">
+					<h2 className="text-xl font-bold text-slate-950">サイト一式を上書き</h2>
+					<SiteFilesForm action={actionPath} buttonText="サイト一式を保存する" />
+				</div>
 				<form method="post" action={actionPath}>
 					<input type="hidden" name="intent" value="delete" />
 					<button
@@ -101,6 +115,8 @@ async function loadEditData(slug: string, key?: string) {
 		return {
 			ok: true as const,
 			html: await object.text(),
+			fileCount: meta.fileCount,
+			totalBytes: meta.totalBytes,
 			updatedAt: meta.updatedAt,
 		};
 	} catch (caughtError) {
@@ -113,6 +129,14 @@ async function loadEditData(slug: string, key?: string) {
 			message,
 		};
 	}
+}
+
+function formatBytes(bytes: number) {
+	if (bytes >= 1024 * 1024) {
+		return `${Math.round((bytes / (1024 * 1024)) * 10) / 10}MB`;
+	}
+
+	return `${Math.max(1, Math.round(bytes / 1024))}KB`;
 }
 
 function ErrorMessage({ message }: { message: string }) {

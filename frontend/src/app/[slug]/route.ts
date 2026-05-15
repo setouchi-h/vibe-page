@@ -1,10 +1,9 @@
 import {
-	HTML_CONTENT_TYPE,
+	contentTypeForPath,
 	getVibeBindings,
 	isValidSlug,
 	readSiteMeta,
-	siteHtmlKey,
-	siteMetaKey,
+	siteFileKey,
 } from "@/lib/vibe-deploy";
 
 export const runtime = "edge";
@@ -30,18 +29,20 @@ export async function GET(_request: Request, context: RouteContext) {
 		return notFound();
 	}
 
-	const object = await bucket.get(siteHtmlKey(slug));
+	const object = await bucket.get(siteFileKey(slug, "index.html"));
 
 	if (!object) {
-		await kv.delete(siteMetaKey(slug));
 		return notFound();
 	}
 
+	const headers = new Headers({
+		"Content-Type": contentTypeForPath("index.html"),
+		"Cache-Control": "no-store",
+	});
+	object.writeHttpMetadata(headers);
+
 	return new Response(object.body, {
-		headers: {
-			"Content-Type": HTML_CONTENT_TYPE,
-			"Cache-Control": "no-store",
-		},
+		headers,
 	});
 }
 
