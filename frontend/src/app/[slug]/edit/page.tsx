@@ -2,7 +2,6 @@ import Link from "next/link";
 import { VibeDeployError, getVibeBindings, makeSiteUrls, siteHtmlKey, verifyEditToken } from "@/lib/vibe-deploy";
 import { SiteFilesForm } from "../../site-files-form";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
