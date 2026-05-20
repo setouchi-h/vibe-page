@@ -5,10 +5,10 @@ import {
 	isValidSlug,
 	normalizeSitePath,
 	readSiteMeta,
+	ROBOTS_BODY,
 	siteFileKey,
 } from "@/lib/vibe-deploy";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 type RouteContext = {
@@ -25,14 +25,18 @@ export async function GET(request: Request, context: RouteContext) {
 		return notFound();
 	}
 
+	const resolvedPath = resolvePublicPath(sitePath);
+
+	if (resolvedPath === "robots.txt") {
+		return textResponse(ROBOTS_BODY);
+	}
+
 	const { kv, bucket } = await getVibeBindings();
 	const meta = await readSiteMeta(kv, slug);
 
 	if (!meta) {
 		return notFound();
 	}
-
-	const resolvedPath = resolvePublicPath(sitePath);
 
 	if (shouldRedirectToDirectoryUrl(resolvedPath, request.url)) {
 		return redirectToTrailingSlash(new URL(request.url), ["slug", "sitePath"]);
@@ -85,8 +89,12 @@ function hasFileExtension(path: string) {
 }
 
 function notFound() {
-	return new Response("Not found", {
-		status: 404,
+	return textResponse("Not found", 404);
+}
+
+function textResponse(body: string, status = 200) {
+	return new Response(body, {
+		status,
 		headers: {
 			"Content-Type": "text/plain; charset=utf-8",
 			"Cache-Control": "no-store",
